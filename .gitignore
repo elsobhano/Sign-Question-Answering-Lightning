@@ -1,0 +1,27 @@
+# Ignore compiled files
+*.o
+*.pyc
+
+# Ignore logs
+*.log
+*.pth
+
+# Ignore the build directory
+/build/
+
+# Ignore all .txt files
+
+# Ignore a specific file
+config.ini
+
+# Ignore all files in a specific directory
+output/
+ckpts/
+logs/
+src/sqa/data/fullFrame-210x260px/
+src/sqa/data/lmdb/
+llama_dir/
+pretrain_models/
+# Ignore IDE/Editor folders
+.vscode/
+.idea/

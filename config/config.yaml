@@ -1,0 +1,8 @@
+data:
+  'lmdb_path': 'src/sqa/data/lmdb'
+  'max_length': 300
+
+compute:
+  'accelerator': "gpu"
+  'devices': [0]
+  'precision': 16
