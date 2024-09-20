@@ -5,9 +5,10 @@
 # Ignore logs
 *.log
 *.pth
+*.egg-info
 
 # Ignore the build directory
-/build/
+
 
 # Ignore all .txt files
 
