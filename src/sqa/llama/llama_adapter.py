@@ -143,6 +143,12 @@ class LLaMA_adapter(pl.LightningModule):
         elif phase == 'pretrain':
             # train_param_name = ['video_encoder','gate', 'vlp_proj', 'vlp_proj_norm', 'visual_query', 'visual_blocks', 'visual_proj', 'visual_proj_norm', 'adapter_query']
             train_param_name = ['gate', 'vlp_proj', 'vlp_proj_norm', 'visual_query', 'visual_blocks', 'visual_proj', 'visual_proj_norm', 'adapter_query']
+            if args.encoder_train:
+                train_param_name.append('video_encoder')
+            if args.lora_train:
+                train_param_name.append('lora')
+                
+            
             for name, para in self.named_parameters():
                 for train_name in train_param_name:
                     if train_name in name:

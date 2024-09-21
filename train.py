@@ -44,6 +44,8 @@ def get_args_parser():
                         help='max number of input words')
 
     # Video encoder parameters
+    parser.add_argument('--encoder_train', default=False, type=bool,
+                        help='Train video encoder or not')
     parser.add_argument('--v_embed_dim', default=768, type=int,
                         )
     parser.add_argument('--v_depth', default=8, type=int,
@@ -58,6 +60,8 @@ def get_args_parser():
                         )
     parser.add_argument('--query_layer', default=31, type=int,
                         )
+    parser.add_argument('--lora_train', default=False, type=bool,
+                        help='Train lora or not')
 
 
     # Optimizer parameters
