@@ -13,6 +13,7 @@ from timm.models.vision_transformer import Block
 from sqa.llama import ModelArgs, Transformer
 from sqa.llama.tokenizer import Tokenizer
 from sqa.llama.utils import sample_top_p, _download
+from sqa.llama.evaluate import compute_bleu
 
 from sqa.vlp import Video_Encoder
 from sqa.vlp import PAD_IDX
