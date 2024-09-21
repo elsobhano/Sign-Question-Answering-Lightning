@@ -88,6 +88,9 @@ class LLaMA_adapter(pl.LightningModule):
 
         # 4. tokenizer
         self.tokenizer = Tokenizer(model_path=llama_tokenizer)
+        self.pad_token_idx = self.tokenizer.pad_id
+        self.eos_token_idx = self.tokenizer.eos_id
+        self.bos_token_idx = self.tokenizer.bos_id
         logger.info(f"Tokenizer is built")
 
         # 5. llama
@@ -188,7 +191,6 @@ class LLaMA_adapter(pl.LightningModule):
 
     def forward(self, 
                 tokens, 
-                labels, 
                 videos,
                 input_mask=None):
         # print(tokens.shape, labels.shape)
@@ -222,44 +224,78 @@ class LLaMA_adapter(pl.LightningModule):
 
         h = self.llama.norm(h)
         output = self.llama.output(h)
-        # print(output.shape, labels.shape)
-        output = output[:, :-1, :]
-        labels = labels[:, 1:]
 
-        if labels.sum() == 0:
-            c_loss = output.mean() * 0
-        else:
-            assert self.llama.vocab_size == 32000
-            c_loss = self.criterion(output.reshape(-1, self.llama.vocab_size), labels.flatten())
-
-        return c_loss
+        return output
     
     
     def training_step(self, batch, batch_idx):
         src_input, input_batch, answer_batch, mask_batch = batch
-        loss = self.forward(input_batch, answer_batch, src_input, mask_batch)
+        logits = self.forward(input_batch, src_input, mask_batch)
+        loss = self.loss_function(logits, answer_batch)
         
-        self.log_dict(
-            {
-                "train_loss": loss,
-            },
-            on_step=True,
-            on_epoch=True,
-            prog_bar=True,
-        )
+        self.log("train_loss": loss, on_step=True, on_epoch=True, prog_bar=True)
         return loss
 
     def validation_step(self, batch, batch_idx):
         src_input, input_batch, answer_batch, mask_batch = batch
-        loss = self.forward(input_batch, answer_batch, src_input, mask_batch)
-        self.log("val_loss", loss, on_step=False, on_epoch=True, prog_bar=True)
+        logits = self.forward(input_batch, src_input, mask_batch)
+        loss = self.loss_function(logits, answer_batch)
+        bleu_score = self.calculate_belu(logits, answer_batch)
+
+        self.log_dict({
+            "val_loss": loss,
+            "val_bleu": bleu_score}, on_step=False, on_epoch=True, prog_bar=True)
+        
+        # self.log("val_loss", loss, on_step=False, on_epoch=True, prog_bar=True)
         return loss
     
     def test_step(self, batch, batch_idx):
         src_input, input_batch, answer_batch, mask_batch = batch
-        loss = self.forward(input_batch, answer_batch, src_input, mask_batch)
+        logits = self.forward(input_batch, src_input, mask_batch)
+        loss = self.loss_function(logits, answer_batch)
+        
         self.log("test_loss", loss)
         return loss
+    
+    def loss_function(self, output, labels):
+        assert self.llama.vocab_size == 32000
+        c_loss = self.criterion(output.reshape(-1, self.llama.vocab_size), labels.flatten())
+
+        return c_loss
+    
+    def remove_special_tokens(self, sentence_tokens):
+        """Removes padding tokens and truncates at EOS."""
+        
+        sentence_tokens = [token for token in sentence_tokens if token not in [self.bos_token_idx, self.pad_token_idx, 0]]
+        if self.eos_token_idx in sentence_tokens:
+            sentence_tokens = sentence_tokens[:sentence_tokens.index(self.eos_token_idx)]
+        return sentence_tokens
+
+    def calculate_belu(self, logits, tgt):
+        
+        pred_tokens = logits.argmax(dim=-1)
+        bleu_scores = []
+        
+        for i in range(pred_tokens.size(0)):  # Loop over the batch
+            pred_seq = pred_tokens[i].tolist()  # Get the predicted token indices for the i-th sample
+            tgt_seq = tgt[i].tolist()  # Get the target token indices for the i-th sample
+
+            # Remove padding and EOS tokens from both sequences
+            pred_seq = self.remove_special_tokens(pred_seq)
+            tgt_seq = self.remove_special_tokens(tgt_seq)
+
+            # Wrap the target sequence in a list (expects multiple references)
+            reference_corpus = [[tgt_seq]]
+            translation_corpus = [pred_seq]
+
+            # Calculate BLEU-4 for this sample
+            bleu_score, precisions, bp, ratio, translation_length, reference_length = compute_bleu(
+                reference_corpus, translation_corpus, max_order=4, smooth=False)
+
+            bleu_scores.append(bleu_score)
+
+        # Calculate the mean BLEU score for the batch
+        avg_bleu = sum(bleu_scores) / len(bleu_scores)
     
     def add_weight_decay(self, weight_decay, skip_list=()):
         """Custom method to create parameter groups with/without weight decay."""
