@@ -36,9 +36,11 @@ class LLaMA_adapter(pl.LightningModule):
                 encoder_type: str = 'vlp',
                 v_embed_dim=768, v_depth=8,
                 v_num_heads=16, v_mlp_ratio=4.0,
+                encoder_train=False,
                 query_len=10, query_layer=31,
                 w_bias=False, 
-                w_lora=False, lora_rank=16, 
+                w_lora=False, lora_rank=16,
+                lora_train=False, 
                 w_new_gate=False,
                 batch_size=None,
                 num_gpus=None,
@@ -143,9 +145,9 @@ class LLaMA_adapter(pl.LightningModule):
         elif phase == 'pretrain':
             # train_param_name = ['video_encoder','gate', 'vlp_proj', 'vlp_proj_norm', 'visual_query', 'visual_blocks', 'visual_proj', 'visual_proj_norm', 'adapter_query']
             train_param_name = ['gate', 'vlp_proj', 'vlp_proj_norm', 'visual_query', 'visual_blocks', 'visual_proj', 'visual_proj_norm', 'adapter_query']
-            if args.encoder_train:
+            if encoder_train:
                 train_param_name.append('video_encoder')
-            if args.lora_train:
+            if lora_train:
                 train_param_name.append('lora')
                 
             
@@ -240,7 +242,7 @@ class LLaMA_adapter(pl.LightningModule):
         logits = self.forward(input_batch, src_input, mask_batch)
         loss = self.loss_function(logits, answer_batch)
         
-        self.log("train_loss": loss, on_step=True, on_epoch=True, prog_bar=True)
+        self.log("train_loss", loss, on_step=True, on_epoch=True, prog_bar=True)
         return loss
 
     def validation_step(self, batch, batch_idx):
@@ -260,8 +262,10 @@ class LLaMA_adapter(pl.LightningModule):
         src_input, input_batch, answer_batch, mask_batch = batch
         logits = self.forward(input_batch, src_input, mask_batch)
         loss = self.loss_function(logits, answer_batch)
+        bleu_score = self.calculate_belu(logits, answer_batch)
         
         self.log("test_loss", loss)
+        self.log("test_bleu", bleu_score)
         return loss
     
     def loss_function(self, output, labels):
@@ -303,6 +307,8 @@ class LLaMA_adapter(pl.LightningModule):
 
         # Calculate the mean BLEU score for the batch
         avg_bleu = sum(bleu_scores) / len(bleu_scores)
+        
+        return avg_bleu
     
     def add_weight_decay(self, weight_decay, skip_list=()):
         """Custom method to create parameter groups with/without weight decay."""
@@ -436,6 +442,8 @@ def load(name,
         max_seq_len=512,
         v_embed_dim=768, v_depth=8,
         v_num_heads=16, v_mlp_ratio=4.0,
+        encoder_train=False,
+        lora_train=False,
         query_len=10, query_layer=31,
         batch_size=None,
         num_gpus=None,

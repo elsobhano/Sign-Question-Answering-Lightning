@@ -127,12 +127,12 @@ def main(args):
     checkpoint_callback = ModelCheckpoint(
     save_top_k=1,
     save_last=True,
-    monitor="val_loss",
-    mode="min",
+    monitor="val_bleu",
+    mode="max",
     dirpath=dirpath,
-    filename="best-{epoch:03d}-{val_loss:.3f}",
+    filename="best-{epoch:03d}-{val_bleu:.3f}",
     )
-    early_stop = EarlyStopping("val_loss", patience=args.patience)
+    early_stop = EarlyStopping("val_bleu", patience=args.patience, mode="max", verbose=True)
     callbacks = [checkpoint_callback, early_stop]
 
 
@@ -144,6 +144,8 @@ def main(args):
         max_seq_len=args.max_words,
         v_embed_dim=args.v_embed_dim, v_depth=args.v_depth,
         v_num_heads=args.v_num_heads, v_mlp_ratio=args.v_mlp_ratio,
+        encoder_train=args.encoder_train,
+        lora_train=args.lora_train, 
         query_len=args.query_len, query_layer=args.query_layer,
         batch_size=args.batch_size,
         num_gpus=num_gpus,
