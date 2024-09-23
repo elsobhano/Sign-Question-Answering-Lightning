@@ -34,6 +34,7 @@ class LLaMA_adapter(pl.LightningModule):
                 llama_ckpt_dir, llama_tokenizer,
                 max_seq_len=512, max_batch_size=1,
                 encoder_type: str = 'vlp',
+                encoder_path: str = 'src/sqa/vlp/best_checkpoint.pth',
                 v_embed_dim=768, v_depth=8,
                 v_num_heads=16, v_mlp_ratio=4.0,
                 encoder_train=False,
@@ -64,7 +65,7 @@ class LLaMA_adapter(pl.LightningModule):
         # 1. video encoder
         if encoder_type == 'vlp':
             logger.info(f"The video encoder model is being built ...")
-            self.video_encoder = Video_Encoder(ckpt_path= 'src/sqa/vlp/best_checkpoint.pth')
+            self.video_encoder = Video_Encoder(ckpt_path= encoder_path)
             logger.info(f"Video encoder model is  built")
             encoder_dim = self.video_encoder.dim_model
 
@@ -444,6 +445,7 @@ def load(name,
         llama_dir, 
         llama_type="7B", 
         max_seq_len=512,
+        encoder_path='src/sqa/vlp/best_checkpoint.pth',
         v_embed_dim=768, v_depth=8,
         v_num_heads=16, v_mlp_ratio=4.0,
         encoder_train=False,
@@ -479,12 +481,15 @@ def load(name,
         llama_ckpt_dir, llama_tokenzier_path,
         max_seq_len=max_seq_len, max_batch_size=1,
         encoder_type='vlp',
+        encoder_path=encoder_path,
         v_embed_dim=v_embed_dim, v_depth=v_depth,
         v_num_heads=v_num_heads, v_mlp_ratio=v_mlp_ratio,
+        encoder_train=encoder_train,
         query_len=query_len, query_layer=query_layer,
         w_bias=model_cfg.get('w_bias', False), 
         w_lora=model_cfg.get('w_lora', False), 
         lora_rank=model_cfg.get('lora_rank', 16),
+        lora_train=lora_train,
         w_new_gate=model_cfg.get('w_lora', False), # for compatibility
         batch_size=batch_size,
         num_gpus=num_gpus,

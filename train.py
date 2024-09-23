@@ -46,6 +46,9 @@ def get_args_parser():
     # Video encoder parameters
     parser.add_argument('--encoder_train', default=False, type=bool,
                         help='Train video encoder or not')
+    parser.add_argument('--encoder_path', default='src/sqa/vlp/best_checkpoint.pth', type=str,
+                        help='best weight for video encoder')
+    
     parser.add_argument('--v_embed_dim', default=768, type=int,
                         )
     parser.add_argument('--v_depth', default=8, type=int,
@@ -142,6 +145,7 @@ def main(args):
         llama_dir=args.llama_dir, 
         llama_type=args.llama_type, 
         max_seq_len=args.max_words,
+        encoder_path=args.encoder_path,
         v_embed_dim=args.v_embed_dim, v_depth=args.v_depth,
         v_num_heads=args.v_num_heads, v_mlp_ratio=args.v_mlp_ratio,
         encoder_train=args.encoder_train,
