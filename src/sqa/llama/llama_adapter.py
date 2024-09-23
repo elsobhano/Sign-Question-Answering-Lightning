@@ -117,6 +117,9 @@ class LLaMA_adapter(pl.LightningModule):
         self.criterion = torch.nn.CrossEntropyLoss(ignore_index=-100)
 
         # 7. training parameters
+        self.encoder_train = encoder_train
+        self.lora_train = lora_train
+
         self.phase = phase
         self.get_trainable_params(self.phase)
 
@@ -126,6 +129,7 @@ class LLaMA_adapter(pl.LightningModule):
         if self.lr is None:  # only base_lr is specified
             self.lr = blr * eff_batch_size / 256
         self.weight_decay = weight_decay
+        
 
 
     def get_trainable_params(self, phase='finetune'):
@@ -145,9 +149,9 @@ class LLaMA_adapter(pl.LightningModule):
         elif phase == 'pretrain':
             # train_param_name = ['video_encoder','gate', 'vlp_proj', 'vlp_proj_norm', 'visual_query', 'visual_blocks', 'visual_proj', 'visual_proj_norm', 'adapter_query']
             train_param_name = ['gate', 'vlp_proj', 'vlp_proj_norm', 'visual_query', 'visual_blocks', 'visual_proj', 'visual_proj_norm', 'adapter_query']
-            if encoder_train:
+            if self.encoder_train:
                 train_param_name.append('video_encoder')
-            if lora_train:
+            if self.lora_train:
                 train_param_name.append('lora')
                 
             
@@ -291,7 +295,7 @@ class LLaMA_adapter(pl.LightningModule):
             pred_seq = pred_tokens[i].tolist()  # Get the predicted token indices for the i-th sample
             tgt_seq = tgt[i].tolist()  # Get the target token indices for the i-th sample
 
-            # Remove padding and EOS tokens from both sequences
+             # Remove padding and EOS tokens from both sequences
             pred_seq = self.remove_special_tokens(pred_seq)
             tgt_seq = self.remove_special_tokens(tgt_seq)
 
@@ -301,7 +305,7 @@ class LLaMA_adapter(pl.LightningModule):
 
             # Calculate BLEU-4 for this sample
             bleu_score, precisions, bp, ratio, translation_length, reference_length = compute_bleu(
-                reference_corpus, translation_corpus, max_order=4, smooth=False)
+                reference_corpus, translation_corpus, max_order=4, smooth=True)
 
             bleu_scores.append(bleu_score)
 
