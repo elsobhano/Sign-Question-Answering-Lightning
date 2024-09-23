@@ -1,5 +1,7 @@
+data_path: &data_path '/mnt/fast/nobackup/users/sa04359/lmdb'
+
 data:
-  'lmdb_path': 'src/sqa/data/lmdb'
+  'lmdb_path': *data_path
   'max_length': 300
 
 compute:

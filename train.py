@@ -24,7 +24,7 @@ from datetime import datetime
 
 torch.set_float32_matmul_precision("medium") # to make lightning happy
 
-
+PATH_ = '/mnt/fast/nobackup/users/sa04359'
 def get_args_parser():
     parser = argparse.ArgumentParser('llama_adapterV2 pre-training', add_help=False)
     parser.add_argument('--batch_size', default=2, type=int,
@@ -38,7 +38,7 @@ def get_args_parser():
                         help='Name of pretrained LLaMA model')
     parser.add_argument('--llama_type', default='7B', type=str,
                         help='Type of LLaMA model') #
-    parser.add_argument('--llama_dir', default='src/sqa/llama/llama_dir', type=str,
+    parser.add_argument('--llama_dir', default=f'{PATH_}/llama_dir', type=str,
                         help='path to LLaMA pretrained checkpoint')
     parser.add_argument('--max_words', default=128, type=int,
                         help='max number of input words')
@@ -46,11 +46,11 @@ def get_args_parser():
     # Video encoder parameters
     parser.add_argument('--encoder_train', default=False, type=bool,
                         help='Train video encoder or not')
-    parser.add_argument('--encoder_path', default='src/sqa/vlp/best_checkpoint.pth', type=str,
+    parser.add_argument('--encoder_path', default=f'{PATH_}/best_checkpoint.pth', type=str,
                         help='best weight for video encoder')
-    parser.add_argument('--trasnformer_path', default='src/sqa/vlp/pretrain_models/MBart_trimmed/', type=str,
+    parser.add_argument('--trasnformer_path', default=f'{PATH_}/pretrain_models/MBart_trimmed/', type=str,
                         help='trasnformer_path for video encoder')
-    parser.add_argument('--visual_encoder_path', default='src/sqa/vlp/pretrain_models/mytran/', type=str,
+    parser.add_argument('--visual_encoder_path', default=f'{PATH_}/pretrain_models/mytran/', type=str,
                         help='visual_encoder_path for video encoder')
     
     parser.add_argument('--v_embed_dim', default=768, type=int,
@@ -86,7 +86,7 @@ def get_args_parser():
     # Dataset parameters
     parser.add_argument('--data_config', default='config/config.yaml', type=str,
                         help='dataset config path')
-    parser.add_argument('--tknzr_path', default='src/sqa/llama/llama_dir/tokenizer.model', type=str,
+    parser.add_argument('--tknzr_path', default=f'{PATH_}/llama_dir/tokenizer.model', type=str,
                         help='path to tokenizer')
     parser.add_argument('--text_path', default='src/sqa/data/labels', type=str,
                         help='path to translated data')
@@ -103,9 +103,9 @@ def get_args_parser():
     parser.set_defaults(pin_mem=True)
 
 
-    parser.add_argument('--output_dir', default='./output',
+    parser.add_argument('--output_dir', default=f'{PATH_}/output',
                         help='path where to save, empty for no saving')
-    parser.add_argument('--log_dir', default='./output',
+    parser.add_argument('--log_dir', default=f'{PATH_}/output',
                         help='path where to tensorboard log')
     parser.add_argument('--device', default='cuda',
                         help='device to use for training / testing')
@@ -164,7 +164,7 @@ def main(args):
         weight_decay=args.weight_decay,
         device=args.device,
         phase="pretrain",
-        download_root='ckpts', 
+        download_root=f'{PATH_}/ckpts', 
     )
 
     data_module = DataModule(

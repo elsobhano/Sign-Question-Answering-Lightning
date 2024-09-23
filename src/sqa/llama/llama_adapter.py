@@ -2,7 +2,7 @@ import os
 import json
 from pathlib import Path
 
-import clip
+# import clip
 import torch
 import torch.nn as nn
 
