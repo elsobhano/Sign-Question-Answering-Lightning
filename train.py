@@ -48,6 +48,10 @@ def get_args_parser():
                         help='Train video encoder or not')
     parser.add_argument('--encoder_path', default='src/sqa/vlp/best_checkpoint.pth', type=str,
                         help='best weight for video encoder')
+    parser.add_argument('--trasnformer_path', default='src/sqa/vlp/pretrain_models/MBart_trimmed/', type=str,
+                        help='trasnformer_path for video encoder')
+    parser.add_argument('--visual_encoder_path', default='src/sqa/vlp/pretrain_models/mytran/', type=str,
+                        help='visual_encoder_path for video encoder')
     
     parser.add_argument('--v_embed_dim', default=768, type=int,
                         )
@@ -146,6 +150,8 @@ def main(args):
         llama_type=args.llama_type, 
         max_seq_len=args.max_words,
         encoder_path=args.encoder_path,
+        trasnformer_path=args.trasnformer_path,
+        visual_encoder_path=args.visual_encoder_path,
         v_embed_dim=args.v_embed_dim, v_depth=args.v_depth,
         v_num_heads=args.v_num_heads, v_mlp_ratio=args.v_mlp_ratio,
         encoder_train=args.encoder_train,

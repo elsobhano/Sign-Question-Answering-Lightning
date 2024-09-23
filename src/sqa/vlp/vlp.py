@@ -17,8 +17,8 @@ from .definition import *
 from typing import Dict
 from sqa.logging import logger
 
-visual_encoder_path = './src/sqa/vlp/pretrain_models/mytran/'
-trasnformer_path = './src/sqa/vlp/pretrain_models/MBart_trimmed/'
+# visual_encoder_path = './src/sqa/vlp/pretrain_models/mytran/'
+# trasnformer_path = './src/sqa/vlp/pretrain_models/MBart_trimmed/'
 
 
 def make_resnet(name='resnet18'):
@@ -111,7 +111,9 @@ class FeatureExtracter(nn.Module):
 
 
 class ImageCLIP(nn.Module):
-    def __init__(self, inplanes=1024, planes=1024, head_type='linear') :
+    def __init__(self,
+                visual_encoder_path,
+                inplanes=1024, planes=1024, head_type='linear') :
         super(ImageCLIP, self).__init__()
         # self.config = config
         self.model =  FeatureExtracter() 
@@ -160,7 +162,9 @@ def shift_tokens_right(input_ids: torch.Tensor, pad_token_id: int):
     return prev_output_tokens
 
 class TextCLIP(nn.Module):
-    def __init__(self, inplanes=1024, planes=1024, head_type='identy'):
+    def __init__(self,
+                trasnformer_path,
+                inplanes=1024, planes=1024, head_type='identy'):
         super(TextCLIP, self).__init__()
 
         self.model_txt = MBartForConditionalGeneration.from_pretrained(trasnformer_path).get_encoder() 
@@ -175,10 +179,13 @@ class TextCLIP(nn.Module):
 
 
 class SLRCLIP(nn.Module):
-    def __init__(self, embed_dim=1024) :
+    def __init__(self,
+                trasnformer_path,
+                visual_encoder_path,
+                embed_dim=1024) :
         super(SLRCLIP, self).__init__()
-        self.model_txt = TextCLIP(inplanes=embed_dim, planes=embed_dim)
-        self.model_images = ImageCLIP(inplanes=embed_dim, planes=embed_dim)
+        self.model_txt = TextCLIP(trasnformer_path, inplanes=embed_dim, planes=embed_dim)
+        self.model_images = ImageCLIP(visual_encoder_path, inplanes=embed_dim, planes=embed_dim)
 
         self.logit_scale = nn.Parameter(torch.ones([]) * np.log(1 / 0.07))
 
@@ -208,11 +215,13 @@ class SLRCLIP(nn.Module):
     
 class Video_Encoder(nn.Module):
     def __init__(self,
+                trasnformer_path,
+                visual_encoder_path,
                 ckpt_path: str|None = None,
                 dim_model: int = 1024,
                 *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
-        vlp_model = SLRCLIP()
+        vlp_model = SLRCLIP(trasnformer_path, visual_encoder_path)
         self.dim_model = dim_model
 
         if ckpt_path is not None:
