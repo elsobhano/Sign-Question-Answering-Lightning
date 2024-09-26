@@ -73,35 +73,29 @@ class SQA_Dataset(Dataset):
         answer = sample['answer']
         # key = self.list[index]
         # file_name = sample['imgs_path']
-        input_prompt = format_prompt(question)
-        # print(input_prompt)
-        # print(answer)
-        
-        input_prompt = torch.tensor(self.tokenizer.encode(input_prompt, bos=True, eos=False), dtype=torch.int64)
-        answer = torch.tensor(self.tokenizer.encode(answer, bos=False, eos=True), dtype=torch.int64)
-        input_padding = self.max_words - input_prompt.shape[0]
-        output_padding = self.max_words - answer.shape[0]
+        input_1 = format_prompt(question)
+        input_2 = input_1 + answer
 
-        if input_padding > 0:
-            input_prompt = torch.cat((input_prompt, torch.zeros(input_padding, dtype=torch.int64) - 1))
-        elif input_padding < 0:
-            input_prompt = input_prompt[:self.max_words]
+        input_1 = torch.tensor(self.tokenizer.encode(input_1, bos=True, eos=False), dtype=torch.int64)
+        input_2 = torch.tensor(self.tokenizer.encode(input_2, bos=True, eos=True), dtype=torch.int64)
+        padding = self.max_words - input_2.shape[0]
+        if padding > 0:
+            input_2 = torch.cat((input_2, torch.zeros(padding, dtype=torch.int64) - 1))
+        elif padding < 0:
+            input_2 = input_2[:self.max_words]
         
-        if output_padding > 0:
-            answer = torch.cat((answer, torch.zeros(output_padding, dtype=torch.int64) - 1))
-        elif output_padding < 0:
-            answer = answer[:self.max_words]
-        
-        input_mask = input_prompt.ge(0)
-        label_mask = answer.ge(0)
-        input_prompt[~input_mask] = 0
-        answer[~label_mask] = -100
-        input_mask = input_mask.float()
+        labels = copy.deepcopy(input_2)
+        labels[:len(input_1)] = -1
+        input_2_mask = input_2.ge(0)
+        label_mask = labels.ge(0)
+        input_2[~input_2_mask] = -1
+        labels[~label_mask] = -1
+        input_2_mask = input_2_mask.float()
         label_mask = label_mask.float()
 
         img_sample = self.load_imgs(file_name)
         
-        return file_name, img_sample, input_prompt, answer, input_mask
+        return file_name, img_sample, input_2, labels, input_2_mask
     
     def load_imgs(self, file_name):
         folder = os.path.join(self.lmdb_path, self.phase)

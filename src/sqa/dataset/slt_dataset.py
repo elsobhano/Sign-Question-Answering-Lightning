@@ -106,36 +106,30 @@ class S2T_Dataset(Dataset):
         # file_name = sample['imgs_path']
         answer = sample['text']
         length = sample['length']
-        input_prompt = format_prompt()
-        
-        input_prompt = torch.tensor(self.tokenizer.encode(input_prompt, bos=True, eos=False), dtype=torch.int64)
-        answer = torch.tensor(self.tokenizer.encode(answer, bos=False, eos=True), dtype=torch.int64)
-        input_padding = self.max_words - input_prompt.shape[0]
-        output_padding = self.max_words - answer.shape[0]
+        input_1 = format_prompt()
+        input_2 = input_1 + answer
 
-        if input_padding > 0:
-            input_prompt = torch.cat((input_prompt, torch.zeros(input_padding, dtype=torch.int64) - 1))
-        elif input_padding < 0:
-            input_prompt = input_prompt[:self.max_words]
+        input_1 = torch.tensor(self.tokenizer.encode(input_1, bos=True, eos=False), dtype=torch.int64)
+        input_2 = torch.tensor(self.tokenizer.encode(input_2, bos=True, eos=True), dtype=torch.int64)
+        padding = self.max_words - input_2.shape[0]
+        if padding > 0:
+            input_2 = torch.cat((input_2, torch.zeros(padding, dtype=torch.int64) - 1))
+        elif padding < 0:
+            input_2 = input_2[:self.max_words]
         
-        if output_padding > 0:
-            answer = torch.cat((answer, torch.zeros(output_padding, dtype=torch.int64) - 1))
-        elif output_padding < 0:
-            answer = answer[:self.max_words]
-        
-        input_mask = input_prompt.ge(0)
-        label_mask = answer.ge(0)
-        input_prompt[~input_mask] = 0
-        answer[~label_mask] = -100
-        input_mask = input_mask.float()
+        labels = copy.deepcopy(input_2)
+        labels[:len(input_1)] = -1
+        input_2_mask = input_2.ge(0)
+        label_mask = labels.ge(0)
+        input_2[~input_2_mask] = -1
+        labels[~label_mask] = -1
+        input_2_mask = input_2_mask.float()
         label_mask = label_mask.float()
-        # print(input_prompt)
-        # print(answer)
-        # exit()
+
         img_sample = self.load_imgs(file_name)
         # print(img_sample.shape)
         
-        return file_name, img_sample, input_prompt, answer, input_mask
+        return file_name, img_sample, input_2, labels, input_2_mask
     
     def load_imgs(self, file_name):
         phase, file_name = file_name.split('/')
@@ -328,17 +322,12 @@ class DataModule(pl.LightningDataModule):
 
 if __name__ == "__main__":
     import yaml
-    config = {
-        'data': {
-            'lmdb_path': 'src/sqa/data/lmdb',
-            'max_length': 300,
-        }
-    }
     with open('config/config.yaml', 'r') as file:
         config = yaml.safe_load(file)
     print(config)
 
-    tokenizer_path = 'src/sqa/llama/llama_dir/tokenizer.model'
+    PATH_ = '/mnt/fast/nobackup/users/sa04359'
+    tokenizer_path = f'{PATH_}/llama_dir/tokenizer.model'
     qa_csv_path = 'src/sqa/data/clean-qa.csv'
     root_text_path = 'src/sqa/data/labels'
     phase = 'train'
